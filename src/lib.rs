@@ -123,15 +123,6 @@ impl Render for Element {
     }
 }
 
-impl<A> Render for (A,)
-where
-    A: Render,
-{
-    fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
-        self.0.render(buffer)
-    }
-}
-
 impl Render for String {
     fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
         buffer.write(escape(self).as_bytes())?;
@@ -148,24 +139,32 @@ impl<'a> Render for &'a str {
     }
 }
 
-impl<A, B> Render for (A, B)
-where
-    A: Render,
-    B: Render,
-{
-    fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
-        self.0.render(buffer)?;
-        self.1.render(buffer)?;
-
-        Ok(())
-    }
-}
-
 impl Render for () {
     fn render(&self, _buffer: &mut Vec<u8>) -> std::io::Result<()> {
         Ok(())
     }
 }
+
+macro_rules! impl_render_tuple {
+    ($max:expr) => {
+        seq_macro::seq!(N in 0..=$max {
+            impl<#(T~N,)*> Render for (#(T~N,)*)
+            where
+                #(T~N: Render,)*
+            {
+                fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
+                    #(self.N.render(buffer)?;)*
+
+                    Ok(())
+                }
+            }
+        });
+    };
+}
+
+seq_macro::seq!(N in 0..=31 {
+    impl_render_tuple!(N);
+});
 
 pub fn doctype() -> Element {
     Element::new("!DOCTYPE html", None)
@@ -268,6 +267,7 @@ impl_element!(link);
 impl_self_closing_element!(input);
 impl_self_closing_element!(meta);
 impl_self_closing_element!(img);
+impl_self_closing_element!(br);
 
 #[cfg(test)]
 mod tests {
@@ -359,5 +359,15 @@ mod tests {
         }
 
         assert_eq!(html(div("hypertext")), "<!DOCTYPE html><html><head><title>title</title></head><body><div>hypertext</div></body></html>")
+    }
+
+    #[test]
+    fn max_tuples_works() {
+        assert_eq!(
+            render(seq_macro::seq!(N in 0..=31 {
+                (#(br().id(N),)*)
+            })),
+            "<br id=\"0\"><br id=\"1\"><br id=\"2\"><br id=\"3\"><br id=\"4\"><br id=\"5\"><br id=\"6\"><br id=\"7\"><br id=\"8\"><br id=\"9\"><br id=\"10\"><br id=\"11\"><br id=\"12\"><br id=\"13\"><br id=\"14\"><br id=\"15\"><br id=\"16\"><br id=\"17\"><br id=\"18\"><br id=\"19\"><br id=\"20\"><br id=\"21\"><br id=\"22\"><br id=\"23\"><br id=\"24\"><br id=\"25\"><br id=\"26\"><br id=\"27\"><br id=\"28\"><br id=\"29\"><br id=\"30\"><br id=\"31\">"
+        )
     }
 }
