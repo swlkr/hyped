@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 use std::{fmt::Display, io::Write};
 extern crate self as hypertext;
 
@@ -338,5 +340,24 @@ mod tests {
         }
         let html = render(hx_close().id("id"));
         assert_eq!("<hx-close id=\"id\">", html);
+    }
+
+    #[test]
+    fn readme_works() {
+        use hypertext::{self, *};
+
+        fn head() -> Element {
+            hypertext::head(title("title"))
+        }
+
+        fn body(element: Element) -> Element {
+            hypertext::body(element)
+        }
+
+        fn html(element: Element) -> String {
+            render((doctype(), hypertext::html((head(), body(element)))))
+        }
+
+        assert_eq!(html(div("hypertext")), "<!DOCTYPE html><html><head><title>title</title></head><body><div>hypertext</div></body></html>")
     }
 }
