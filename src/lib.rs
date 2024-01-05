@@ -1,32 +1,48 @@
-use aho_corasick::AhoCorasick;
-use std::{fmt::Display, io::Write};
+use std::{borrow::Cow, fmt::Display, io::Write};
 extern crate self as hyped;
 
-fn escape(html: impl Display) -> String {
-    let patterns = &["&", "<", ">", "\"", "'"];
-    let replace_with = &["&amp;", "&lt;", "&gt;", "&quot;", "&#39;"];
+fn escape<'a, S: Into<Cow<'a, str>>>(input: S) -> Cow<'a, str> {
+    let input = input.into();
+    fn needs_escaping(c: char) -> bool {
+        c == '<' || c == '>' || c == '&' || c == '"' || c == '\''
+    }
 
-    AhoCorasick::new(patterns)
-        .unwrap()
-        .replace_all(&html.to_string(), replace_with)
+    if let Some(first) = input.find(needs_escaping) {
+        let mut output = String::from(&input[0..first]);
+        output.reserve(input.len() - first);
+        let rest = input[first..].chars();
+        for c in rest {
+            match c {
+                '<' => output.push_str("&lt;"),
+                '>' => output.push_str("&gt;"),
+                '&' => output.push_str("&amp;"),
+                '"' => output.push_str("&quot;"),
+                '\'' => output.push_str("&#39;"),
+                _ => output.push(c),
+            }
+        }
+        Cow::Owned(output)
+    } else {
+        input
+    }
 }
 
 pub struct Element {
     name: &'static str,
-    attrs: String,
+    attrs: Vec<u8>,
     children: Option<Box<dyn Render>>,
 }
 
 macro_rules! impl_attr {
     ($ident:ident) => {
         pub fn $ident(self, value: impl Display) -> Self {
-            self.attr(stringify!($ident), escape(value))
+            self.attr(stringify!($ident), value)
         }
     };
 
     ($ident:ident, $name:expr) => {
         pub fn $ident(self, value: impl Display) -> Self {
-            self.attr($name, escape(value))
+            self.attr($name, value)
         }
     };
 }
@@ -43,28 +59,42 @@ impl Element {
     fn new(name: &'static str, children: Option<Box<dyn Render>>) -> Element {
         Element {
             name,
-            attrs: String::default(),
+            attrs: vec![],
             children,
         }
     }
 
     pub fn attr(mut self, name: &'static str, value: impl Display) -> Self {
         if !self.attrs.is_empty() {
-            self.attrs.push_str(" ");
+            self.attrs
+                .write(b" ")
+                .expect("attr failed to write to buffer");
         }
-        self.attrs.push_str(name);
-        self.attrs.push_str("=\"");
-        self.attrs.push_str(&escape(value));
-        self.attrs.push_str("\"");
+        self.attrs
+            .write_fmt(format_args!("{}", name))
+            .expect("attr failed to write to buffer");
+        self.attrs
+            .write(b"=\"")
+            .expect("attr failed to write to buffer");
+        self.attrs
+            .write_fmt(format_args!("{}", escape(value.to_string())))
+            .expect("attr failed to write to buffer");
+        self.attrs
+            .write(b"\"")
+            .expect("attr failed to write to buffer");
 
         self
     }
 
     pub fn bool_attr(mut self, name: &'static str) -> Self {
         if !self.attrs.is_empty() {
-            self.attrs.push_str(" ");
+            self.attrs
+                .write(b" ")
+                .expect("bool_attr failed to write to buffer");
         }
-        self.attrs.push_str(name);
+        self.attrs
+            .write_fmt(format_args!("{}", name))
+            .expect("bool_attr failed to write to buffer");
 
         self
     }
@@ -113,18 +143,19 @@ pub trait Render {
 
 impl Render for Element {
     fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
+        let name_bytes = self.name.as_bytes();
         buffer.write(b"<")?;
-        buffer.write(self.name.as_bytes())?;
+        buffer.write(name_bytes)?;
         if !self.attrs.is_empty() {
             buffer.write(b" ")?;
-            buffer.write(self.attrs.as_bytes())?;
+            buffer.write(&self.attrs)?;
         }
         buffer.write(b">")?;
         match &self.children {
             Some(children) => {
                 children.render(buffer)?;
                 buffer.write(b"</")?;
-                buffer.write(self.name.as_bytes())?;
+                buffer.write(name_bytes)?;
                 buffer.write(b">")?;
             }
             None => {}
@@ -134,9 +165,23 @@ impl Render for Element {
     }
 }
 
+pub struct Raw(String);
+
+impl Render for Raw {
+    fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
+        buffer.write_fmt(format_args!("{}", self.0))?;
+
+        Ok(())
+    }
+}
+
+pub fn danger(html: impl Display) -> Raw {
+    Raw(html.to_string())
+}
+
 impl Render for String {
     fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
-        buffer.write(escape(self).as_bytes())?;
+        buffer.write_fmt(format_args!("{}", escape(self)))?;
 
         Ok(())
     }
@@ -144,7 +189,7 @@ impl Render for String {
 
 impl<'a> Render for &'a str {
     fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
-        buffer.write(escape(self).as_bytes())?;
+        buffer.write_fmt(format_args!("{}", escape(*self)))?;
 
         Ok(())
     }
@@ -152,6 +197,19 @@ impl<'a> Render for &'a str {
 
 impl Render for () {
     fn render(&self, _buffer: &mut Vec<u8>) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+impl<T> Render for Vec<T>
+where
+    T: Render,
+{
+    fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
+        for t in self {
+            t.render(buffer)?;
+        }
+
         Ok(())
     }
 }
@@ -191,13 +249,14 @@ macro_rules! impl_render_num {
     ($t:ty) => {
         impl Render for $t {
             fn render(&self, buffer: &mut Vec<u8>) -> std::io::Result<()> {
-                buffer.write(self.to_string().as_bytes())?;
+                buffer.write_fmt(format_args!("{}", &self))?;
                 Ok(())
             }
         }
     };
 }
 
+impl_render_num!(u8);
 impl_render_num!(u16);
 impl_render_num!(f64);
 impl_render_num!(f32);

@@ -4,5 +4,4 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aho-corasick = "1.1.2"
 seq-macro = "0.3"
