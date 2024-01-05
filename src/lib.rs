@@ -12,33 +12,28 @@ fn escape(html: impl Display) -> String {
 
 pub struct Element {
     name: &'static str,
-    attrs: Vec<String>,
+    attrs: String,
     children: Option<Box<dyn Render>>,
 }
 
 macro_rules! impl_attr {
     ($ident:ident) => {
-        pub fn $ident(mut self, value: impl Display) -> Self {
-            self.attrs
-                .push(format!(r#"{}="{}""#, stringify!($ident), escape(value)));
-            self
+        pub fn $ident(self, value: impl Display) -> Self {
+            self.attr(stringify!($ident), escape(value))
         }
     };
 
     ($ident:ident, $name:expr) => {
-        pub fn $ident(mut self, value: impl Display) -> Self {
-            self.attrs
-                .push(format!(r#"{}="{}""#, stringify!($name), escape(value)));
-            self
+        pub fn $ident(self, value: impl Display) -> Self {
+            self.attr($name, escape(value))
         }
     };
 }
 
 macro_rules! impl_bool_attr {
     ($ident:ident) => {
-        pub fn $ident(mut self) -> Self {
-            self.attrs.push(stringify!($ident).to_string());
-            self
+        pub fn $ident(self) -> Self {
+            self.bool_attr(stringify!($ident))
         }
     };
 }
@@ -47,13 +42,29 @@ impl Element {
     fn new(name: &'static str, children: Option<Box<dyn Render>>) -> Element {
         Element {
             name,
-            attrs: vec![],
+            attrs: String::default(),
             children,
         }
     }
 
     pub fn attr(mut self, name: &'static str, value: impl Display) -> Self {
-        self.attrs.push(format!(r#"{}="{}""#, name, escape(value)));
+        if !self.attrs.is_empty() {
+            self.attrs.push_str(" ");
+        }
+        self.attrs.push_str(name);
+        self.attrs.push_str("=\"");
+        self.attrs.push_str(&escape(value));
+        self.attrs.push_str("\"");
+
+        self
+    }
+
+    pub fn bool_attr(mut self, name: &'static str) -> Self {
+        if !self.attrs.is_empty() {
+            self.attrs.push_str(" ");
+        }
+        self.attrs.push_str(name);
+
         self
     }
 
@@ -104,7 +115,7 @@ impl Render for Element {
         buffer.write(self.name.as_bytes())?;
         if !self.attrs.is_empty() {
             buffer.write(b" ")?;
-            buffer.write(self.attrs.join(" ").as_bytes())?;
+            buffer.write(self.attrs.as_bytes())?;
         }
         buffer.write(b">")?;
         match &self.children {
@@ -356,11 +367,29 @@ mod tests {
 
     #[test]
     fn max_tuples_works() {
-        assert_eq!(
-        render(seq_macro::seq!(N in 0..=31 {
+        let elements = seq_macro::seq!(N in 0..=31 {
             (#(br().id(N),)*)
-        })),
-        "<br id=\"0\"><br id=\"1\"><br id=\"2\"><br id=\"3\"><br id=\"4\"><br id=\"5\"><br id=\"6\"><br id=\"7\"><br id=\"8\"><br id=\"9\"><br id=\"10\"><br id=\"11\"><br id=\"12\"><br id=\"13\"><br id=\"14\"><br id=\"15\"><br id=\"16\"><br id=\"17\"><br id=\"18\"><br id=\"19\"><br id=\"20\"><br id=\"21\"><br id=\"22\"><br id=\"23\"><br id=\"24\"><br id=\"25\"><br id=\"26\"><br id=\"27\"><br id=\"28\"><br id=\"29\"><br id=\"30\"><br id=\"31\">"
-    )
+        });
+
+        assert_eq!(render(elements),
+            "<br id=\"0\"><br id=\"1\"><br id=\"2\"><br id=\"3\"><br id=\"4\"><br id=\"5\"><br id=\"6\"><br id=\"7\"><br id=\"8\"><br id=\"9\"><br id=\"10\"><br id=\"11\"><br id=\"12\"><br id=\"13\"><br id=\"14\"><br id=\"15\"><br id=\"16\"><br id=\"17\"><br id=\"18\"><br id=\"19\"><br id=\"20\"><br id=\"21\"><br id=\"22\"><br id=\"23\"><br id=\"24\"><br id=\"25\"><br id=\"26\"><br id=\"27\"><br id=\"28\"><br id=\"29\"><br id=\"30\"><br id=\"31\">"
+        )
+    }
+
+    #[test]
+    fn bool_attr_works() {
+        let html = render(input().r#type("checkbox").checked());
+
+        assert_eq!(html, r#"<input type="checkbox" checked>"#)
+    }
+
+    #[test]
+    fn multiple_attrs_spaced_correctly() {
+        let html = render(input().r#type("checkbox").checked().aria_label("label"));
+
+        assert_eq!(
+            html,
+            r#"<input type="checkbox" checked aria-label="label">"#
+        )
     }
 }
