@@ -1,13 +1,14 @@
+use aho_corasick::AhoCorasick;
 use std::{fmt::Display, io::Write};
 extern crate self as hyped;
 
 fn escape(html: impl Display) -> String {
-    html.to_string()
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace("\"", "&quot;")
-        .replace("'", "&#39;")
+    let patterns = &["&", "<", ">", "\"", "'"];
+    let replace_with = &["&amp;", "&lt;", "&gt;", "&quot;", "&#39;"];
+
+    AhoCorasick::new(patterns)
+        .unwrap()
+        .replace_all(&html.to_string(), replace_with)
 }
 
 pub struct Element {
