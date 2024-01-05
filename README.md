@@ -1,28 +1,24 @@
-# hypertext
+# hyped
 
-hypertext offers an ergonomic way to render html from plain rust functions
+hyped offers an ergonomic way to render html from plain rust functions
 
 ```sh
-cargo add hypertext # not on crates.io yet, add { git = "https://github.com/swlkr/hypertext" } to your Cargo.toml to use
+cargo add hyped # not on crates.io yet, add { git = "https://github.com/swlkr/hyped" } to your Cargo.toml to use
 ```
 
 # Write some html
 
 ```rust
-use hypertext::{*, self};
+use hyped::*;
 
-fn head() -> Element {
-  hypertext::head((
-    title("title")
+fn render_to_string(element: Element) -> String {
+  render((
+    doctype(),
+    html((
+      head(title("title")),
+      body(element)
+    ))
   ))
-}
-
-fn body(element: Element) -> Element {
-  hypertext::body(element)
-}
-
-fn html(element: Element) -> String {
-    render((doctype(), hypertext::html((head(), body(element)))))
 }
 
 #[cfg(test)]
@@ -30,7 +26,10 @@ mod tests {
 
   #[test]
   fn it_works() {
-      assert_eq!(html(div("hypertext")), "<!DOCTYPE html><html><head><title>title</title></head><body><div>hypertext</div></body></html>")
+      assert_eq!(
+        render_to_string(div("hyped")),
+        "<!DOCTYPE html><html><head><title>title</title></head><body><div>hyped</div></body></html>"
+      )
   }
 }
 ```

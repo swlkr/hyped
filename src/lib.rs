@@ -1,7 +1,5 @@
-#![doc = include_str!("../README.md")]
-
 use std::{fmt::Display, io::Write};
-extern crate self as hypertext;
+extern crate self as hyped;
 
 fn escape(html: impl Display) -> String {
     html.to_string()
@@ -271,7 +269,7 @@ impl_self_closing_element!(br);
 
 #[cfg(test)]
 mod tests {
-    use hypertext::*;
+    use hyped::*;
 
     #[test]
     fn it_works() {
@@ -344,30 +342,25 @@ mod tests {
 
     #[test]
     fn readme_works() {
-        use hypertext::{self, *};
+        use hyped::*;
 
-        fn head() -> Element {
-            hypertext::head(title("title"))
+        fn render_to_string(element: Element) -> String {
+            render((doctype(), html((head(title("title")), body(element)))))
         }
 
-        fn body(element: Element) -> Element {
-            hypertext::body(element)
-        }
-
-        fn html(element: Element) -> String {
-            render((doctype(), hypertext::html((head(), body(element)))))
-        }
-
-        assert_eq!(html(div("hypertext")), "<!DOCTYPE html><html><head><title>title</title></head><body><div>hypertext</div></body></html>")
+        assert_eq!(
+        render_to_string(div("hyped")),
+        "<!DOCTYPE html><html><head><title>title</title></head><body><div>hyped</div></body></html>"
+      )
     }
 
     #[test]
     fn max_tuples_works() {
         assert_eq!(
-            render(seq_macro::seq!(N in 0..=31 {
-                (#(br().id(N),)*)
-            })),
-            "<br id=\"0\"><br id=\"1\"><br id=\"2\"><br id=\"3\"><br id=\"4\"><br id=\"5\"><br id=\"6\"><br id=\"7\"><br id=\"8\"><br id=\"9\"><br id=\"10\"><br id=\"11\"><br id=\"12\"><br id=\"13\"><br id=\"14\"><br id=\"15\"><br id=\"16\"><br id=\"17\"><br id=\"18\"><br id=\"19\"><br id=\"20\"><br id=\"21\"><br id=\"22\"><br id=\"23\"><br id=\"24\"><br id=\"25\"><br id=\"26\"><br id=\"27\"><br id=\"28\"><br id=\"29\"><br id=\"30\"><br id=\"31\">"
-        )
+        render(seq_macro::seq!(N in 0..=31 {
+            (#(br().id(N),)*)
+        })),
+        "<br id=\"0\"><br id=\"1\"><br id=\"2\"><br id=\"3\"><br id=\"4\"><br id=\"5\"><br id=\"6\"><br id=\"7\"><br id=\"8\"><br id=\"9\"><br id=\"10\"><br id=\"11\"><br id=\"12\"><br id=\"13\"><br id=\"14\"><br id=\"15\"><br id=\"16\"><br id=\"17\"><br id=\"18\"><br id=\"19\"><br id=\"20\"><br id=\"21\"><br id=\"22\"><br id=\"23\"><br id=\"24\"><br id=\"25\"><br id=\"26\"><br id=\"27\"><br id=\"28\"><br id=\"29\"><br id=\"30\"><br id=\"31\">"
+    )
     }
 }
