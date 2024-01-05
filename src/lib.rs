@@ -92,6 +92,7 @@ impl Element {
     impl_attr!(toggle);
     impl_attr!(scope);
     impl_attr!(title);
+    impl_attr!(lang);
     impl_attr!(r#type, "type");
     impl_attr!(r#for, "for");
     impl_attr!(aria_controls, "aria-controls");
