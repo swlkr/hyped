@@ -15,7 +15,7 @@ fn render_to_string(element: Element) -> String {
   render((
     doctype(),
     html((
-      head(title("title")),
+      head((title("title"), meta().charset("utf-8"))),
       body(element)
     ))
   ))

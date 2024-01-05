@@ -356,12 +356,18 @@ mod tests {
         use hyped::*;
 
         fn render_to_string(element: Element) -> String {
-            render((doctype(), html((head(title("title")), body(element)))))
+            render((
+                doctype(),
+                html((
+                    head((title("title"), meta().charset("utf-8"))),
+                    body(element),
+                )),
+            ))
         }
 
         assert_eq!(
         render_to_string(div("hyped")),
-        "<!DOCTYPE html><html><head><title>title</title></head><body><div>hyped</div></body></html>"
+        "<!DOCTYPE html><html><head><title>title</title><meta charset=\"utf-8\"></head><body><div>hyped</div></body></html>"
       )
     }
 
