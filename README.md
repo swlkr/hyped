@@ -3,7 +3,7 @@
 hyped offers an ergonomic way to render html from plain rust functions
 
 ```sh
-cargo add hyped # not on crates.io yet, add { git = "https://github.com/swlkr/hyped" } to your Cargo.toml to use
+cargo add hyped
 ```
 
 # Write some html
