@@ -39,14 +39,17 @@ mod tests {
 ```rust
 use hyped::*;
 
-fn main() {
+fn htmx_input() -> Element {
   input()
     .attr("hx-post", "/")
     .attr("hx-target", ".target")
     .attr("hx-swap", "outerHTML")
     .attr("hx-push-url", "false")
-  // renders
-  // <input hx-post="/" hx-target=".target" hx-swap="outerHTML" hx-push-url="false">
+}
+
+fn main() {
+  let html: String = render(htmx_input());
+  // html == <input hx-post="/" hx-target=".target" hx-swap="outerHTML" hx-push-url="false">
 }
 ```
 
@@ -60,8 +63,8 @@ fn turbo_frame(children: Element) -> Element {
 }
 
 fn main() {
-  turbo_frame(div("inside turbo frame")).id("id")
-  // renders
+  let html: String = render(turbo_frame(div("inside turbo frame")).id("id"));
+  // html ==
   // <turbo-frame id="id">
   //   <div>inside turbo frame</div>
   // </turbo-frame>
