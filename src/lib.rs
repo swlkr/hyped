@@ -392,18 +392,6 @@ mod tests {
     }
 
     #[test]
-    fn it_renders_custom_elements() {
-        fn turbo_frame(children: impl Render + 'static) -> Element {
-            element("turbo-frame", children)
-        }
-        let html = render(turbo_frame(div("inside turbo frame")).id("id"));
-        assert_eq!(
-            "<turbo-frame id=\"id\"><div>inside turbo frame</div></turbo-frame>",
-            html
-        );
-    }
-
-    #[test]
     fn it_renders_custom_self_closing_elements() {
         fn hx_close() -> Element {
             self_closing_element("hx-close")
@@ -458,5 +446,33 @@ mod tests {
             html,
             r#"<input type="checkbox" checked aria-label="label">"#
         )
+    }
+
+    #[test]
+    fn readme1_works() {
+        let element = input()
+            .attr("hx-post", "/")
+            .attr("hx-target", ".target")
+            .attr("hx-swap", "outerHTML")
+            .attr("hx-push-url", "false");
+        let html = render(element);
+
+        assert_eq!(
+            html,
+            r#"<input hx-post="/" hx-target=".target" hx-swap="outerHTML" hx-push-url="false">"#
+        )
+    }
+
+    #[test]
+    fn readme2_works() {
+        fn turbo_frame(children: Element) -> Element {
+            element("turbo-frame", children)
+        }
+        let html = render(turbo_frame(div("inside turbo frame")).id("id"));
+
+        assert_eq!(
+            "<turbo-frame id=\"id\"><div>inside turbo frame</div></turbo-frame>",
+            html
+        );
     }
 }
