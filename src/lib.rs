@@ -106,6 +106,7 @@ impl Element {
     impl_attr!(name);
     impl_attr!(href);
     impl_attr!(rel);
+    impl_attr!(target);
     impl_attr!(src);
     impl_attr!(integrity);
     impl_attr!(crossorigin);
