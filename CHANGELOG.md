@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 # 0.2.0 (2024-02-01)
 
-- Add target attr
+- Deprecate r#for and r#type in favor of for_ and type_
 
 # 0.1.1 (2024-01-17)
 
