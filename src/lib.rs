@@ -99,6 +99,16 @@ impl Element {
         self
     }
 
+    #[deprecated(since = "0.1.1", note = "Please use type_ instead")]
+    pub fn r#type(self, value: impl Display) -> Self {
+        self.attr("type", value)
+    }
+
+    #[deprecated(since = "0.1.1", note = "Please use for_ instead")]
+    pub fn r#for(self, value: impl Display) -> Self {
+        self.attr("for", value)
+    }
+
     impl_attr!(class);
     impl_attr!(id);
     impl_attr!(charset);
@@ -124,8 +134,8 @@ impl Element {
     impl_attr!(scope);
     impl_attr!(title);
     impl_attr!(lang);
-    impl_attr!(r#type, "type");
-    impl_attr!(r#for, "for");
+    impl_attr!(type_, "type");
+    impl_attr!(for_, "for");
     impl_attr!(aria_controls, "aria-controls");
     impl_attr!(aria_expanded, "aria-expanded");
     impl_attr!(aria_label, "aria-label");
@@ -434,14 +444,14 @@ mod tests {
 
     #[test]
     fn bool_attr_works() {
-        let html = render(input().r#type("checkbox").checked());
+        let html = render(input().type_("checkbox").checked());
 
         assert_eq!(html, r#"<input type="checkbox" checked>"#)
     }
 
     #[test]
     fn multiple_attrs_spaced_correctly() {
-        let html = render(input().r#type("checkbox").checked().aria_label("label"));
+        let html = render(input().type_("checkbox").checked().aria_label("label"));
 
         assert_eq!(
             html,
