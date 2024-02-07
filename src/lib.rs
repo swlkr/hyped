@@ -294,7 +294,7 @@ macro_rules! impl_element {
     };
 }
 
-macro_rules! impl_self_closing_element {
+macro_rules! impl_void_element {
     ($ident:ident) => {
         pub fn $ident() -> Element {
             Element::new(stringify!($ident), None)
@@ -343,12 +343,21 @@ impl_element!(tbody);
 impl_element!(textarea);
 impl_element!(datalist);
 impl_element!(option);
-impl_element!(link);
 
-impl_self_closing_element!(input);
-impl_self_closing_element!(meta);
-impl_self_closing_element!(img);
-impl_self_closing_element!(br);
+impl_void_element!(area);
+impl_void_element!(base);
+impl_void_element!(br);
+impl_void_element!(col);
+impl_void_element!(embed);
+impl_void_element!(hr);
+impl_void_element!(img);
+impl_void_element!(input);
+impl_void_element!(link);
+impl_void_element!(meta);
+impl_void_element!(param);
+impl_void_element!(source);
+impl_void_element!(track);
+impl_void_element!(wbr);
 
 #[cfg(test)]
 mod tests {
